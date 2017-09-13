@@ -8,4 +8,10 @@
 
     <string name="button_send">Send</string>
     <string name="button_card">Card View</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="title_activity_ccard">Create Card</string>
+    <string name="section_format">Hello World from section: %1$d</string>
+    <string name="title_activity_test">test</string>
 </resources>

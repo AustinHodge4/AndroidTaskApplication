@@ -1,5 +1,6 @@
 package com.example.austin.myapplication;
 
+import android.app.DialogFragment;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -11,12 +12,10 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import java.text.SimpleDateFormat;
+
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 
 class MyAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -27,28 +26,48 @@ class MyAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private static class DateCardViewHolder extends RecyclerView.ViewHolder {
         // each data item is just a string in this case
         TextView mTextView;
-         TextView mDateView;
-         Context context;
+        TextView mDateView;
+        ImageView mCalendarView;
+        Context context;
 
-         DateCardViewHolder(View v) {
-            super(v);
-            mTextView = (TextView) v.findViewById(R.id.title);
-            mDateView = (TextView) v.findViewById(R.id.date);
-            context = v.getContext();
+        DateCardViewHolder(View v) {
+             super(v);
+             mTextView = (TextView) v.findViewById(R.id.title);
+             mDateView = (TextView) v.findViewById(R.id.date);
+             mCalendarView = (ImageView) v.findViewById(R.id.calendar);
+             context = v.getContext();
         }
     }
     private static class LocationCardViewHolder extends RecyclerView.ViewHolder {
         // each data item is just a string in this case
-         TextView mTitleView;
-         TextView mAddressView;
-         ImageView mLocationView;
-         Context context;
+        TextView mTitleView;
+        TextView mAddressView;
+        ImageView mLocationView;
+        Context context;
 
         LocationCardViewHolder(View v) {
             super(v);
             mTitleView = (TextView) v.findViewById(R.id.title);
-            mAddressView = (TextView) v.findViewById(R.id.date);
+            mAddressView = (TextView) v.findViewById(R.id.address);
             mLocationView = (ImageView) v.findViewById(R.id.location);
+            context = v.getContext();
+
+        }
+    }
+    private static class PhoneCardViewHolder extends RecyclerView.ViewHolder {
+        // each data item is just a string in this case
+        TextView mTitleView;
+        TextView mSubtitleView;
+        TextView mDateView;
+        ImageView mPhoneView;
+        Context context;
+
+        PhoneCardViewHolder(View v) {
+            super(v);
+            mTitleView = (TextView) v.findViewById(R.id.title);
+            mSubtitleView = (TextView) v.findViewById(R.id.subtitle);
+            mDateView = (TextView) v.findViewById(R.id.date);
+            mPhoneView = (ImageView) v.findViewById(R.id.phone);
             context = v.getContext();
 
         }
@@ -84,6 +103,14 @@ class MyAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
                 viewHolder = new LocationCardViewHolder(view);
                 return viewHolder;
+            case 2:
+                view = LayoutInflater.from(parent.getContext())
+                        .inflate(R.layout.phone_card, parent, false);
+                // set the view's size, margins, paddings and layout parameters
+                //...
+
+                viewHolder = new PhoneCardViewHolder(view);
+                return viewHolder;
         }
         return null;
     }
@@ -96,10 +123,16 @@ class MyAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             case 0:
                 // - get element from your dataset at this position
                 // - replace the contents of the view with that element
-                DateCardViewHolder dateCard = (DateCardViewHolder)holder;
+                final DateCardViewHolder dateCard = (DateCardViewHolder)holder;
                 dateCard.mTextView.setText(mDataset.get(position).Title());
-                String formattedDate = new SimpleDateFormat("E MM/dd", Locale.US).format(mDataset.get(position).Date());
-                dateCard.mDateView.setText(formattedDate);
+                dateCard.mDateView.setText(mDataset.get(position).DateString());
+                dateCard.mCalendarView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view){
+                        DialogFragment newFragment = new TimePickerFragment();
+
+                    }
+                });
                 return;
             case 1:
                 final LocationCardViewHolder locationCard = (LocationCardViewHolder) holder;
@@ -114,14 +147,33 @@ class MyAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 });
                 return;
             case 2:
-                final LocationCardViewHolder phoneCard = (LocationCardViewHolder) holder;
-                phoneCard.mTitleView.setText(mDataset.get(position).Title());
-                phoneCard.mAddressView.setText(mDataset.get(position).Location());
-                phoneCard.mLocationView.setOnClickListener(new View.OnClickListener() {
+                final PhoneCardViewHolder phoneCard = (PhoneCardViewHolder) holder;
+                final CardInformationHolder card = mDataset.get(position);
+
+                phoneCard.mTitleView.setText(card.Title());
+                if(card.Subtitle().isEmpty()){
+                    phoneCard.mSubtitleView.setVisibility(View.GONE);
+                }
+                else {
+                    phoneCard.mSubtitleView.setText(card.Subtitle());
+                }
+                if(card.hasDate() && card.hasTime()) {
+                    CardTextLabelAnimator textAnimator = new CardTextLabelAnimator(phoneCard.mDateView, new String[] {card.DateString(), "6:45 PM"});
+                    textAnimator.startAnimation();
+                }
+                else if(card.hasDate()){
+                    phoneCard.mDateView.setText(card.DateString());
+                }
+                else if(card.hasTime()){
+                    phoneCard.mDateView.setText("4:20 PM");
+                }
+
+                phoneCard.mPhoneView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        Intent url = new Intent(Intent.ACTION_CALL, Uri.parse("tel:"+mDataset.get(position).EncodedLocation()));
+                        Intent url = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:"+card.Phone()));
                         try {
+                            Log.println(Log.INFO, "Phone","tel:"+card.Phone());
                             phoneCard.context.startActivity(url);
                         }
                         catch(SecurityException e){
@@ -133,14 +185,15 @@ class MyAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     }
     void addData(String value){
-        mDataset.add(new CardInformationHolder(value, Calendar.getInstance().getTime(), "Pizza Hut", CardInformationHolder.CARDTYPE.LOCATION));
+        mDataset.add(new CardInformationHolder(value, null, null, "Pizza Hut", null,CardInformationHolder.CARDTYPE.LOCATION));
         notifyItemInserted(getItemCount() + 1);
+        Sort();
     }
     void remove(int position){
         mDataset.remove(position);
         notifyItemRemoved(position);
     }
-    public void Sort(){
+    void Sort(){
         Collections.sort(mDataset);
         notifyDataSetChanged();
     }

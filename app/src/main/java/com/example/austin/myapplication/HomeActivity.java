@@ -20,7 +20,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
 
 
@@ -62,7 +61,7 @@ public class HomeActivity extends AppCompatActivity
 
                 mAdapter.addData("Newdsafsdfdfdsfdfsdfadfdfsddsdfsdfdfasdf");
 
-                Intent intent = new Intent(HomeActivity.this, CreateCardActivity.class);
+                Intent intent = new Intent(HomeActivity.this, CCardActivity.class);
                 startActivity(intent);
             }
         });
@@ -81,8 +80,8 @@ public class HomeActivity extends AppCompatActivity
 
         // specify an adapter (see also next example)
         List<CardInformationHolder> myDataset = new ArrayList<>();
-        myDataset.add(new CardInformationHolder("Test", Calendar.getInstance().getTime(), "Winston-Salem State University", CardInformationHolder.CARDTYPE.REGULAR));
-        myDataset.get(0).EncodedLocation();
+        myDataset.add(new CardInformationHolder("Test", null, null, "Winston-Salem State University", "7048841973", CardInformationHolder.CARDTYPE.PHONE));
+        //myDataset.get(0).EncodedLocation();
         mAdapter = new MyAdapter(myDataset);
         mRecyclerView.setAdapter(mAdapter);
     }
