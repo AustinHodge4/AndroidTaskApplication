@@ -13,6 +13,9 @@
     <string name="card_note">Note</string>
     <string name="card_modified_date">Modified Date</string>
 
+    <string name="navigation_drawer_open">Open Nav</string>
+    <string name="navigation_drawer_close">Close Nav</string>
+
     <string name="button_send">Send</string>
     <string name="button_card">Card View</string>
     <string name="title_activity_main">Task Manager</string>
