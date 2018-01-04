@@ -13,8 +13,8 @@
 
     <de.hdodenhof.circleimageview.CircleImageView
         android:id="@+id/user_icon"
-        android:layout_width="64dp"
-        android:layout_height="64dp"
+        android:layout_width="@dimen/profile_width"
+        android:layout_height="@dimen/profile_height"
         android:src="@mipmap/ic_launcher_round" />
     <TextView
         android:id="@+id/user_name"

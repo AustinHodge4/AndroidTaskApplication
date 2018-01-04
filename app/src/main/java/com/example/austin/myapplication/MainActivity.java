@@ -1,15 +1,11 @@
 package com.example.austin.myapplication;
 
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.StaggeredGridLayoutManager;
-import android.support.v7.widget.helper.ItemTouchHelper;
+import android.support.v4.app.FragmentTransaction;
+import android.transition.Fade;
 import android.util.Log;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -22,12 +18,10 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.firebase.ui.auth.AuthUI;
 import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
@@ -35,9 +29,8 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreException;
-import com.google.firebase.firestore.Query;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -48,22 +41,15 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener, NoteAdapter.OnNoteSelectedListener{
+        implements NavigationView.OnNavigationItemSelectedListener,
+                   HomeFragment.OnNoteEvent {
 
     private static final int RC_SIGN_IN = 123;
+    private static final String TAG = "MainActivity";
     private FirebaseFirestore mFirestore;
-
-    @BindView(R.id.card_recycler)
-    RecyclerView mNoteRecycler;
-
-    @BindView(R.id.view_empty)
-    View mEmptyView;
 
     @BindView(R.id.toolbar)
     Toolbar mToolbar;
-
-    @BindView(R.id.fab)
-    FloatingActionButton mFab;
 
     @BindView(R.id.drawer_layout)
     DrawerLayout mDrawer;
@@ -71,11 +57,8 @@ public class MainActivity extends AppCompatActivity
     @BindView(R.id.nav_view)
     NavigationView mNavigationView;
 
-    MainActivityViewModel mViewModel;
-
-    NoteAdapter mAdapter;
-
-    Query mQuery;
+    public static MainActivityViewModel mViewModel;
+    public static DocumentReference mUserRef;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,7 +66,6 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
         setSupportActionBar(mToolbar);
-
         mFirestore = FirebaseFirestore.getInstance();
         mViewModel = new MainActivityViewModel();
 
@@ -93,86 +75,22 @@ public class MainActivity extends AppCompatActivity
         toggle.syncState();
 
         mNavigationView.setNavigationItemSelectedListener(this);
-        mQuery = mFirestore.collection("Users");
 
-        mAdapter = new NoteAdapter(mQuery, this) {
-            @Override
-            protected void onDataChanged() {
-                // Show/hide content if the query returns empty.
-                if (getItemCount() == 0) {
-                    mNoteRecycler.setVisibility(View.GONE);
-                    mEmptyView.setVisibility(View.VISIBLE);
-                } else {
-                    mNoteRecycler.setVisibility(View.VISIBLE);
-                    mEmptyView.setVisibility(View.GONE);
-                }
-            }
+        getWindow().setEnterTransition(new Fade());
+        getWindow().setExitTransition(new Fade());
 
-            @Override
-            protected void onError(FirebaseFirestoreException e) {
-                // Show a snackbar on errors
-                Snackbar.make(findViewById(android.R.id.content),
-                        "Error: check logs for info.", Snackbar.LENGTH_LONG).show();
-            }
-        };
-        mNoteRecycler.setLayoutManager(new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL));
-        mNoteRecycler.setAdapter(mAdapter);
-        setupCardListCallback();
-        setupFABCallback();
+        HomeFragment fragment = HomeFragment.newInstance();
+        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+        ft.replace(R.id.fragment_container, fragment, HomeFragment.TAG);
+        ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+        ft.addToBackStack(null);
+        ft.commit();
     }
-    private void setupFABCallback(){
-        mFab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // Lanuch empty fragment
-                createTestCard();
-            }
-        });
-    }
-    private void setupCardListCallback(){
-        ItemTouchHelper.SimpleCallback simpleCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
-            @Override
-            public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
-                return false;
-            }
 
-            @Override
-            public void onSwiped(final RecyclerView.ViewHolder viewHolder, int direction) {
-                final int position = viewHolder.getAdapterPosition();
-
-                if (direction == ItemTouchHelper.RIGHT) {
-
-                    AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                    builder.setMessage("Are you sure to delete?");
-
-                    builder.setPositiveButton("REMOVE", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            NoteUtil.deleteDocument(mAdapter.getSnapshot(position));
-                            Snackbar.make(findViewById(android.R.id.content),
-                                    "Card Deleted", Snackbar.LENGTH_SHORT).show();
-                        }
-                    }).setNegativeButton("CANCEL", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            mAdapter.notifyDataSetChanged();
-                        }
-                    }).show();
-                }
-            }
-        };
-        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(simpleCallback);
-        itemTouchHelper.attachToRecyclerView(mNoteRecycler);
-    }
-    public void setQuery(){
-        Query query = mFirestore.collection("Users")
-                .document(FirebaseAuth.getInstance().getCurrentUser().getUid())
-                .collection("Cards")
-                .orderBy("modified", Query.Direction.DESCENDING);
-        mAdapter.setQuery(query);
-    }
     @Override
     public void onBackPressed() {
+        if(isArchiveFragmentVisible() || isHomeFragmentVisible())
+            finish();
         if (mDrawer.isDrawerOpen(GravityCompat.START)) {
             mDrawer.closeDrawer(GravityCompat.START);
         } else {
@@ -192,11 +110,9 @@ public class MainActivity extends AppCompatActivity
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.app_bar_search) {
-            return true;
+        switch(item.getItemId()){
+            case R.id.app_bar_search:
+                return true;
         }
 
         return super.onOptionsItemSelected(item);
@@ -209,11 +125,45 @@ public class MainActivity extends AppCompatActivity
         int id = item.getItemId();
 
         switch(id){
+            case R.id.nav_home:
+                mToolbar.setTitle(R.string.home_name);
+                if(isHomeFragmentVisible())
+                    break;
+
+                HomeFragment homeFragment = HomeFragment.newInstance();
+
+                FragmentTransaction homeTransaction = getSupportFragmentManager().beginTransaction();
+                homeTransaction.replace(R.id.fragment_container, homeFragment, HomeFragment.TAG);
+                homeTransaction.addToBackStack(null);
+                homeTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+                homeTransaction.commit();
+                break;
             case R.id.nav_archive:
+                mToolbar.setTitle(R.string.archive_name);
+                if(isArchiveFragmentVisible())
+                    break;
+                ArchiveFragment archiveFragment = ArchiveFragment.newInstance();
+
+                FragmentTransaction archiveTransaction = getSupportFragmentManager().beginTransaction();
+                archiveTransaction.replace(R.id.fragment_container, archiveFragment, ArchiveFragment.TAG);
+                archiveTransaction.addToBackStack(null);
+                archiveTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+                archiveTransaction.commit();
                 break;
             case R.id.nav_trash:
+                mToolbar.setTitle(R.string.trash_name);
+                if(isTrashFragmentVisible())
+                    break;
+                TrashFragment trashFragment = TrashFragment.newInstance();
+
+                FragmentTransaction trashTransaction = getSupportFragmentManager().beginTransaction();
+                trashTransaction.replace(R.id.fragment_container, trashFragment, TrashFragment.TAG);
+                trashTransaction.addToBackStack(null);
+                trashTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+                trashTransaction.commit();
                 break;
             case R.id.nav_settings:
+                mToolbar.setTitle(R.string.settings);
                 break;
             case R.id.nav_signout:
                 signOut();
@@ -227,12 +177,11 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onStart(){
         super.onStart();
-        if(shouldStartSignIn()) {
+        if(shouldStartSignIn()){
             startSignIn();
             return;
         }
-        setQuery();
-        if(mAdapter != null) mAdapter.startListening();
+        if(!isUserSet()) setUser();
 
         View headerView = mNavigationView.getHeaderView(0);
         TextView navUsername = headerView.findViewById(R.id.user_name);
@@ -244,17 +193,50 @@ public class MainActivity extends AppCompatActivity
         Glide.with(this)
                 .load(FirebaseAuth.getInstance().getCurrentUser().getPhotoUrl())
                 .into(navUserIcon);
+
     }
     @Override
     public void onStop(){
         super.onStop();
-        if(mAdapter != null) mAdapter.stopListening();
     }
 
     @Override
-    public void onNoteSelected(DocumentSnapshot note){
-        Toast.makeText(getApplicationContext(), "Selected Note!!", Toast.LENGTH_SHORT).show();
+    public void onArchiveEvent(final ArrayList<DocumentSnapshot> snapshots){
+        Snackbar mySnackbar = Snackbar.make(findViewById(R.id.constraint_layout),
+                R.string.message_note_archived, Snackbar.LENGTH_SHORT);
+        mySnackbar.setAction(R.string.undo, new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                NoteUtil.unarchiveDocument(snapshots);
+            }
+        });
+        mySnackbar.show();
+    }
 
+    @Override
+    public void onTrashEvent(final ArrayList<DocumentSnapshot> snapshots){
+        Snackbar mySnackbar = Snackbar.make(findViewById(R.id.constraint_layout),
+                R.string.message_note_trashed, Snackbar.LENGTH_SHORT);
+        mySnackbar.setAction(R.string.undo, new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                NoteUtil.untrashDocument(snapshots);
+            }
+        });
+        mySnackbar.show();
+    }
+
+    private boolean isHomeFragmentVisible(){
+        HomeFragment homeFragment = (HomeFragment) getSupportFragmentManager().findFragmentByTag(HomeFragment.TAG);
+        return (homeFragment != null && homeFragment.isVisible());
+    }
+    private boolean isArchiveFragmentVisible(){
+        ArchiveFragment archiveFragment = (ArchiveFragment) getSupportFragmentManager().findFragmentByTag(ArchiveFragment.TAG);
+        return (archiveFragment != null && archiveFragment.isVisible());
+    }
+    private boolean isTrashFragmentVisible(){
+        TrashFragment trashFragment = (TrashFragment) getSupportFragmentManager().findFragmentByTag(TrashFragment.TAG);
+        return (trashFragment != null && trashFragment.isVisible());
     }
     private void signOut(){
         AuthUI.getInstance()
@@ -265,17 +247,17 @@ public class MainActivity extends AppCompatActivity
                     }
                 });
     }
-    private boolean shouldStartSignIn() {
+    public boolean shouldStartSignIn() {
         return (!mViewModel.getIsSigningIn() && FirebaseAuth.getInstance().getCurrentUser() == null);
     }
-    private void startSignIn() {
+    public void startSignIn() {
         List<AuthUI.IdpConfig> providers = Arrays.asList(
                 new AuthUI.IdpConfig.Builder(AuthUI.EMAIL_PROVIDER).build(),
                 new AuthUI.IdpConfig.Builder(AuthUI.GOOGLE_PROVIDER).build());
         // Sign in with FirebaseUI
         Intent intent = AuthUI.getInstance().createSignInIntentBuilder()
                 .setAvailableProviders(providers)
-                .setLogo(R.drawable.halo)
+                .setLogo(R.mipmap.ic_launcher_new)
                 .setIsSmartLockEnabled(false)
                 .build();
 
@@ -293,45 +275,54 @@ public class MainActivity extends AppCompatActivity
             if (resultCode != RESULT_OK && shouldStartSignIn()) {
                 startSignIn();
             }
-
+            if(!isUserSet()) setUser();
             Log.d("Success", "Logged In!!!");
             sendData();
         }
     }
-    private void createTestCard(){
+    public static boolean isUserSet(){
+        return mUserRef != null;
+    }
+    public static void setUser(){
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if(user != null) {
-            Note note = new Note("Test", "Yo", new Date());
-            mFirestore.collection("Users")
-                    .document(user.getUid())
-                    .collection("Cards")
-                    .add(note).addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
-                @Override
-                public void onSuccess(DocumentReference documentReference) {
-                    Log.d("Success", "Note Added!");
-                }
-            });
-            Snackbar.make(findViewById(android.R.id.content),
-                    "Created Card", Snackbar.LENGTH_SHORT).show();
+            mUserRef = FirebaseFirestore.getInstance().collection("Users").document(user.getUid());
         }
     }
+    public boolean isUserSignIn(){
+        return (FirebaseAuth.getInstance().getCurrentUser() != null);
+    }
     private void sendData(){
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if(user != null) {
-            DocumentReference doc = mFirestore.collection("Users").document(user.getUid());
-            Map<String, Object> map = new HashMap<>();
-            map.put("Note", "I need to go to sleep.");
-            map.put("Date", new Date());
-
-            doc.set(map).addOnSuccessListener(new OnSuccessListener<Void>() {
+        if(isUserSignIn()) {
+            mUserRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
                 @Override
-                public void onSuccess(Void aVoid) {
-                    Log.d("Success", "Data Added!");
-                }
-            }).addOnFailureListener(new OnFailureListener() {
-                @Override
-                public void onFailure(@NonNull Exception e) {
-                    Log.w("Failure", e);
+                public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                    if(task.isSuccessful()){
+                        DocumentSnapshot documentSnapshot = task.getResult();
+                        if(documentSnapshot.exists()){
+                            mUserRef.update("last_login", new Date()).addOnSuccessListener(new OnSuccessListener<Void>() {
+                                @Override
+                                public void onSuccess(Void aVoid) {
+                                    Log.d(TAG,"Updated User");
+                                }
+                            });
+                        }
+                        else{
+                            Map<String, Object> map = new HashMap<>();
+                            map.put("last_login", new Date());
+                            Map<String, Object> labels = new HashMap<>();
+                            map.put("lables", labels);
+                            mUserRef.set(map).addOnSuccessListener(new OnSuccessListener<Void>() {
+                                @Override
+                                public void onSuccess(Void aVoid) {
+                                    Log.d(TAG,"Created User");
+                                }
+                            });
+                        }
+                    }
+                    else {
+                        Log.w(TAG, "User setup error");
+                    }
                 }
             });
         }

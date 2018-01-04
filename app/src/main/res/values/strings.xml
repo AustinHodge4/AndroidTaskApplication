@@ -1,23 +1,32 @@
 <resources>
     <string name="app_name">Task Manager</string>
+    <string name="home_name">Notes</string>
+    <string name="archive_name">Archive</string>
+    <string name="trash_name">Trash</string>
 
     <string name="default_username">None</string>
     <string name="default_email">None@none.com</string>
+
     <string name="search">Search</string>
+    <string name="undo">Undo</string>
+    <string name="restore">Restore</string>
+    <string name="home">Home</string>
     <string name="archive">Archive</string>
     <string name="trash">Trash</string>
     <string name="settings">Settings</string>
     <string name="sign_out">Sign Out</string>
 
-    <string name="card_title">Title</string>
-    <string name="card_note">Note</string>
-    <string name="card_modified_date">Modified Date</string>
 
     <string name="navigation_drawer_open">Open Nav</string>
     <string name="navigation_drawer_close">Close Nav</string>
 
-    <string name="button_send">Send</string>
-    <string name="button_card">Card View</string>
-    <string name="title_activity_main">Task Manager</string>
-    <string name="message_no_results">No notes</string>
+    <string name="message_note_archived">Archived</string>
+    <string name="message_note_trashed">Moved to Trash</string>
+    <string name="message_no_results">You can add notes here</string>
+    <string name="message_no_archives">Notes you archived appear here</string>
+    <string name="message_no_trash">Trash is empty</string>
+
+    <string name="field_title">title</string>
+    <string name="field_note">note</string>
+    <string name="field_modified">modified</string>
 </resources>

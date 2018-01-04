@@ -2,6 +2,7 @@ package com.example.austin.myapplication;
 
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.util.SparseBooleanArray;
 
 import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -11,6 +12,7 @@ import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 /**
@@ -29,7 +31,7 @@ public abstract class FirestoreAdapter<VH extends RecyclerView.ViewHolder>
     private Query mQuery;
     private ListenerRegistration mRegistration;
 
-    private ArrayList<DocumentSnapshot> mSnapshots = new ArrayList<>();
+    private ArrayList<DocumentItem> mSnapshots = new ArrayList<>();
 
     FirestoreAdapter(Query query) {
         mQuery = query;
@@ -96,24 +98,55 @@ public abstract class FirestoreAdapter<VH extends RecyclerView.ViewHolder>
         return mSnapshots.size();
     }
 
+    public int getSelectedItemCount(){
+        int count = 0;
+        for(DocumentItem item : mSnapshots){
+            if(item.isSelected()) count++;
+        }
+        return count;
+    }
+
+    public boolean isSelected(int index){
+        return mSnapshots.get(index).isSelected();
+    }
+
+    public void toggleSelection(int index){
+        mSnapshots.get(index).setSelected(!mSnapshots.get(index).isSelected());
+    }
+
+    public void clearSelection(){
+        for (DocumentItem item : mSnapshots) {
+            item.setSelected(false);
+        }
+    }
+    public ArrayList<DocumentSnapshot> getSelected(){
+        ArrayList<DocumentSnapshot> snapshots = new ArrayList<>();
+        for(DocumentItem snapshot : mSnapshots){
+            if(snapshot.isSelected()) snapshots.add(snapshot.getSnapshot());
+        }
+        return snapshots;
+    }
+
     DocumentSnapshot getSnapshot(int index) {
-        return mSnapshots.get(index);
+        return mSnapshots.get(index).getSnapshot();
     }
 
     private void onDocumentAdded(DocumentChange change) {
-        mSnapshots.add(change.getNewIndex(), change.getDocument());
+        DocumentItem item = new DocumentItem(change.getDocument(), false);
+        mSnapshots.add(change.getNewIndex(), item);
         notifyItemInserted(change.getNewIndex());
     }
 
     private void onDocumentModified(DocumentChange change) {
+        DocumentItem item = new DocumentItem(change.getDocument(), false);
         if (change.getOldIndex() == change.getNewIndex()) {
             // Item changed but remained in same position
-            mSnapshots.set(change.getOldIndex(), change.getDocument());
+            mSnapshots.set(change.getOldIndex(), item);
             notifyItemChanged(change.getOldIndex());
         } else {
             // Item changed and changed position
             mSnapshots.remove(change.getOldIndex());
-            mSnapshots.add(change.getNewIndex(), change.getDocument());
+            mSnapshots.add(change.getNewIndex(), item);
             notifyItemMoved(change.getOldIndex(), change.getNewIndex());
         }
     }

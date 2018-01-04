@@ -1,5 +1,7 @@
 package com.example.austin.myapplication;
 
+import android.support.v4.view.ViewCompat;
+import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -26,8 +28,8 @@ import butterknife.ButterKnife;
 public class NoteAdapter extends FirestoreAdapter<NoteAdapter.ViewHolder> {
     public interface OnNoteSelectedListener {
 
-        void onNoteSelected(DocumentSnapshot restaurant);
-
+        void onNoteSelected(DocumentSnapshot note, View view, int index);
+        void onNoteHold(DocumentSnapshot note, View view, int index);
     }
 
     private OnNoteSelectedListener mListener;
@@ -45,7 +47,7 @@ public class NoteAdapter extends FirestoreAdapter<NoteAdapter.ViewHolder> {
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
-        holder.bind(getSnapshot(position), mListener);
+        holder.bind(holder, getSnapshot(position), mListener, position);
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
@@ -59,13 +61,18 @@ public class NoteAdapter extends FirestoreAdapter<NoteAdapter.ViewHolder> {
         @BindView(R.id.card_modified)
         TextView modifiedView;
 
+        @BindView(R.id.card_view)
+        CardView cardView;
+
         ViewHolder(View itemView) {
             super(itemView);
             ButterKnife.bind(this, itemView);
         }
 
-        void bind(final DocumentSnapshot snapshot,
-                  final OnNoteSelectedListener listener) {
+        void bind(final ViewHolder holder,
+                  final DocumentSnapshot snapshot,
+                  final OnNoteSelectedListener listener,
+                  final int index) {
 
             Note note = snapshot.toObject(Note.class);
 
@@ -80,8 +87,17 @@ public class NoteAdapter extends FirestoreAdapter<NoteAdapter.ViewHolder> {
                 @Override
                 public void onClick(View view) {
                     if (listener != null) {
-                        listener.onNoteSelected(snapshot);
+                        listener.onNoteSelected(snapshot, itemView, index);
                     }
+                }
+            });
+            itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View view) {
+                    if(listener != null){
+                        listener.onNoteHold(snapshot, itemView, index);
+                    }
+                    return true;
                 }
             });
         }

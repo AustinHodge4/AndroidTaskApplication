@@ -6,8 +6,11 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
+    android:foreground="?android:attr/selectableItemBackground"
+    android:transitionName="shared"
     card_view:cardBackgroundColor="@color/cardview_light_background"
-    card_view:cardCornerRadius="2dp">
+    card_view:cardCornerRadius="2dp"
+    card_view:cardElevation="2dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -18,6 +21,14 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
+            <ImageView
+                android:id="@+id/card_image"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true"
+                android:visibility="gone"
+                card_view:srcCompat="@drawable/halo" />
+
             <TextView
                 android:id="@+id/card_title"
                 android:layout_width="wrap_content"
@@ -26,8 +37,9 @@
                 android:layout_marginEnd="8dp"
                 android:layout_marginStart="8dp"
                 android:layout_marginTop="8dp"
+                android:layout_below="@id/card_image"
                 android:fontFamily="@font/roboto"
-                android:text="@string/card_title"
+                android:text="@string/field_title"
                 android:textColor="@color/colorPrimaryText"
                 android:textSize="14sp"
                 android:textStyle="bold" />
@@ -39,10 +51,35 @@
                 android:layout_below="@+id/card_title"
                 android:layout_margin="8dp"
                 android:fontFamily="@font/roboto_slab_thin"
-                android:text="@string/card_note"
+                android:text="@string/field_note"
                 android:textColor="@color/colorPrimaryText"
                 android:textSize="30sp"
                 android:typeface="normal" />
+
+            <TableRow
+                android:id="@+id/label_row"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/card_note"
+                android:orientation="horizontal"
+                android:visibility="visible">
+
+                <TextView
+                    android:id="@+id/card_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="8dp"
+                    android:background="@color/common_google_signin_btn_text_dark_disabled"
+                    android:fontFamily="@font/roboto_slab_thin"
+                    android:padding="1dp"
+                    android:text="Rennaisance"
+                    android:textColor="@color/colorPrimaryText"
+                    android:textSize="10sp"
+                    android:typeface="normal"
+                    android:visibility="gone" />
+
+            </TableRow>
+
         </RelativeLayout>
 
         <View
@@ -50,11 +87,9 @@
             android:layout_height="1dp"
             android:background="@android:color/darker_gray" />
 
-        <GridLayout
+        <android.support.constraint.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            tools:layout_editor_absoluteX="-1dp"
-            tools:layout_editor_absoluteY="-2dp">
+            android:layout_height="match_parent">
 
             <TextView
                 android:id="@+id/card_modified"
@@ -62,14 +97,35 @@
                 android:layout_height="wrap_content"
                 android:layout_column="0"
                 android:layout_margin="8dp"
+                android:layout_marginBottom="8dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="8dp"
                 android:layout_row="0"
                 android:fontFamily="@font/roboto_slab_light"
-                android:text="@string/card_modified_date"
+                android:text="@string/field_modified"
                 android:textAlignment="viewStart"
                 android:textColor="@color/colorPrimaryText"
-                android:textSize="12sp" />
+                android:textSize="12sp"
+                card_view:layout_constraintBottom_toBottomOf="parent"
+                card_view:layout_constraintStart_toStartOf="parent"
+                card_view:layout_constraintTop_toTopOf="parent" />
 
-        </GridLayout>
+            <ImageView
+                android:id="@+id/card_reminder"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_column="1"
+                android:layout_marginBottom="8dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginTop="8dp"
+                android:layout_row="0"
+                android:visibility="gone"
+                card_view:layout_constraintBottom_toBottomOf="parent"
+                card_view:layout_constraintEnd_toEndOf="parent"
+                card_view:layout_constraintTop_toTopOf="parent"
+                card_view:srcCompat="@drawable/ic_schedule_black_24dp" />
+
+        </android.support.constraint.ConstraintLayout>
 
     </LinearLayout>
 
